@@ -7,6 +7,8 @@ const Movie = require("./models/Movie");
 const movieRoutes=require("./routes/movieRoutes");
 const theaterRoutes = require("./routes/theaterRoutes");
 const screenRoutes = require("./routes/screenRoutes");
+const showRoutes = require("./routes/showRoutes");
+
 
 const app = express();
 
@@ -21,7 +23,7 @@ app.get("/", (req, res) => {
 app.use("/api/movies",movieRoutes);
 app.use("/api/theaters", theaterRoutes);
 app.use("/api/screens", screenRoutes);
-
+app.use("/api/shows", showRoutes);
 
 
 app.use((err,req,res,next)=>{
