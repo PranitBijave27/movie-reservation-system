@@ -28,6 +28,7 @@ const bookingSchema = new mongoose.Schema(
     min:0
   },
 
+  //is booking successfull or not
   status:{
     type:String,
     enum:["pending","confirmed","cancelled","expired"],
