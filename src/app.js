@@ -8,6 +8,7 @@ const movieRoutes=require("./routes/movieRoutes");
 const theaterRoutes = require("./routes/theaterRoutes");
 const screenRoutes = require("./routes/screenRoutes");
 const showRoutes = require("./routes/showRoutes");
+const bookingRoutes = require("./routes/bookingRoutes");
 
 
 const app = express();
@@ -24,6 +25,7 @@ app.use("/api/movies",movieRoutes);
 app.use("/api/theaters", theaterRoutes);
 app.use("/api/screens", screenRoutes);
 app.use("/api/shows", showRoutes);
+app.use("/api/bookings", bookingRoutes);
 
 
 app.use((err,req,res,next)=>{
