@@ -119,3 +119,38 @@ exports.confirmBooking = async (bookingId) => {
     await booking.save();
     return booking;
 }
+
+exports.cancelBooking = async (bookingId) => {
+    const booking = await Booking.findById(bookingId);
+    if (!booking)
+        throw new Error("Booking not found");
+    if (booking.status === "cancelled")
+        throw new Error("Booking already cancelled");
+
+    const show = await Show.findById(booking.showId);
+
+    if (!show)
+        throw new Error("Show not found");
+
+    const currentTime = new Date();
+    const showTime = new Date(show.startTime);
+
+    if ((showTime-currentTime) < 2*60*60*1000){
+        if((showTime-currentTime)< 0){
+            throw new Error("Cannot cancel a show that has already started or finished");
+        }
+        throw new Error("Cannot cancel within 2 hours of showtime");
+    }
+
+    booking.status = "cancelled";
+
+    if(booking.paymentStatus==="paid"){
+        booking.paymentStatus="refunded";
+    }else{
+        booking.paymentStatus="failed";
+    }
+    booking.expiresAt = null;
+
+    await booking.save();
+    return booking;
+};
