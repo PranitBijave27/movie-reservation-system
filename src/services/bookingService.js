@@ -32,13 +32,18 @@ exports.createBooking = async ({ userId, showId, seatIds }) => {
     
     let totalAmount = seats.reduce((sum, seat) => {
         let multiplier = 1;
-        if(seat.type === "premium") multiplier = 1.2;
-        if(seat.type === "vip") multiplier = 1.5;
+        if(seat.type === "premium") multiplier =1.45;
+        if(seat.type === "vip") multiplier = 1.75;
 
         return sum + show.basePrice * multiplier;
     },0);
 
     totalAmount = Math.round(totalAmount);
+    totalAmount = Math.ceil(totalAmount);
+    
+    if (totalAmount % 10 === 0) {
+        totalAmount = totalAmount - 1;
+    }
     //5 minutes lock for seat
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
