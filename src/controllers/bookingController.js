@@ -1,41 +1,26 @@
 const bookingService = require("../services/bookingService");
+const wrapAsync=require("../utils/wrapAsync");
 
-exports.createBooking = async (req,res,next)=>{
-  try{
+exports.createBooking = wrapAsync(async (req,res,next)=>{
     const booking = await bookingService.createBooking({
       userId: req.body.userId, // for testing now 
       showId: req.body.showId,
       seatIds: req.body.seatIds
     });
     res.status(201).json(booking);
-  }catch(err){
-    next(err);
-  }
-};
+});
 
-exports.getBookedSeats = async (req,res,next)=>{
-  try{
+exports.getBookedSeats = wrapAsync(async (req,res,next)=>{
     const seats = await bookingService.getBookedSeats(req.params.showId);
     res.json(seats);
-  }catch(err){
-    next(err);
-  }
-};
+});
 
-exports.getSeatAvailabilty=async(req,res,next)=>{
-  try{
+exports.getSeatAvailabilty=wrapAsync(async(req,res,next)=>{
     const seats=await bookingService.getSeatAvailabilty(req.params.showId);
     res.json(seats);
-  }catch(err){
-    next(err);
-  }
-};
+});
 
-exports.confirmBooking = async (req,res,next)=>{
-  try{
+exports.confirmBooking =wrapAsync( async (req,res,next)=>{
     const booking = await bookingService.confirmBooking(req.params.bookingId);
     res.json(booking);
-  }catch(err){
-    next(err);
-  }
-};
+});
