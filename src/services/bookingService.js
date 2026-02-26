@@ -72,3 +72,35 @@ exports.getBookedSeats = async (showId) => {
   return bookedSeatIds;
 
 };
+
+exports.getSeatAvailabilty=async(showId)=>{
+
+    //find show
+    const show=await Show.findById(showId);
+    if(!show){
+        throw new Error("Show not found");
+    }
+    //getting all seats
+    const seats=await Seat.find({
+        screenId:show.screenId,
+        isActive:true, //not broken seat
+    }).sort({row:1,number:1});
+
+    //find booked seats
+    const booking=await Booking.find({
+        showId,
+        status:{$in:["pending","confirmed"]}
+    });
+    //extracting booked seats
+    const bookedSeatIds=new Set(
+        booking.flatMap(b=> b.seats.map(id=>id.toString()))
+    );
+    const result= seats.map(seat=>({
+        _id:seat._id,
+        row:seat.row,
+        number:seat.number,
+        type:seat.type,
+        isBooked:bookedSeatIds.has(seat._id.toString())
+    }));
+    return result;
+}

@@ -20,5 +20,13 @@ exports.getBookedSeats = async (req,res,next)=>{
   }catch(err){
     next(err);
   }
+};
 
+exports.getSeatAvailabilty=async(req,res,next)=>{
+  try{
+    const seats=await bookingService.getSeatAvailabilty(req.params.showId);
+    res.json(seats);
+  }catch(err){
+    next(err);
+  }
 };
