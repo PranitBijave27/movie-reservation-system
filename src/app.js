@@ -29,7 +29,9 @@ app.use("/api/bookings", bookingRoutes);
 
 
 app.use((err,req,res,next)=>{
-  res.status(400).json({error:err.message});
+  res.status(400).json({
+    error:err.message
+  });
 });
 
 

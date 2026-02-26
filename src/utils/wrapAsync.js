@@ -1,7 +1,6 @@
 
-function wrapAsync(fnx){
-    return function(req,res,next){
-        fnx(req,res,next).catch(next);
-    }
-}
-module.exports=wrapAsync;
+module.exports = function wrapAsync(fn){
+  return function(req,res,next){
+    fn(req,res,next).catch(next);
+  };
+};
