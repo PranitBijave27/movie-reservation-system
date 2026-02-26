@@ -10,17 +10,28 @@ exports.createBooking = wrapAsync(async (req,res,next)=>{
     res.status(201).json(booking);
 });
 
-exports.getBookedSeats = wrapAsync(async (req,res,next)=>{
+exports.getBookedSeats = wrapAsync(async (req,res)=>{
     const seats = await bookingService.getBookedSeats(req.params.showId);
     res.json(seats);
 });
 
-exports.getSeatAvailabilty=wrapAsync(async(req,res,next)=>{
+exports.getSeatAvailabilty=wrapAsync(async(req,res)=>{
     const seats=await bookingService.getSeatAvailabilty(req.params.showId);
     res.json(seats);
 });
 
-exports.confirmBooking =wrapAsync( async (req,res,next)=>{
+exports.confirmBooking =wrapAsync( async (req,res)=>{
     const booking = await bookingService.confirmBooking(req.params.bookingId);
     res.json(booking);
+});
+
+exports.cancelBooking = wrapAsync(async (req,res)=>{
+  const booking = await bookingService.cancelBooking(req.params.bookingId);
+  res.status(200).json({
+        status: "success",
+        message: "Booking has been cancelled and seats released.",
+        data: {
+            booking: booking
+        }
+    });
 });
