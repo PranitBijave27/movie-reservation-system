@@ -30,3 +30,12 @@ exports.getSeatAvailabilty=async(req,res,next)=>{
     next(err);
   }
 };
+
+exports.confirmBooking = async (req,res,next)=>{
+  try{
+    const booking = await bookingService.confirmBooking(req.params.bookingId);
+    res.json(booking);
+  }catch(err){
+    next(err);
+  }
+};

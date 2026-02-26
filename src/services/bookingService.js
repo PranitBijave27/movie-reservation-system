@@ -64,13 +64,10 @@ exports.getBookedSeats = async (showId) => {
     showId,
     status: { $in: ["pending","confirmed"] }
   })
-  .select("seats -_id")
-  ;
+  .select("seats -_id");
 
   const bookedSeatIds = bookings.flatMap(b => b.seats);
-
   return bookedSeatIds;
-
 };
 
 exports.getSeatAvailabilty=async(showId)=>{
@@ -103,4 +100,22 @@ exports.getSeatAvailabilty=async(showId)=>{
         isBooked:bookedSeatIds.has(seat._id.toString())
     }));
     return result;
+}
+
+exports.confirmBooking = async (bookingId) => {
+
+    const booking = await Booking.findById(bookingId);
+    if (!booking)
+        throw new Error("Booking not found");
+    if (booking.status !== "pending")
+        throw new Error("Booking cannot be confirmed");
+    if (booking.expiresAt && booking.expiresAt < new Date())
+        throw new Error("Booking expired");
+
+    booking.status = "confirmed";
+    booking.paymentStatus = "paid";
+    booking.expiresAt = null;
+
+    await booking.save();
+    return booking;
 }
