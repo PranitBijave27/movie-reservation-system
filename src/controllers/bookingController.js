@@ -35,3 +35,14 @@ exports.cancelBooking = wrapAsync(async (req,res)=>{
         }
     });
 });
+
+
+exports.getMyBookings=wrapAsync(async (req,res)=>{
+    const userId=req.user?._id || req.params.userId;
+    
+    if (!userId) {
+        throw new Error("User identification is required to view bookings.");
+    }
+    const bookings=await bookingService.getUserBookings(userId);
+    res.json(bookings);
+});

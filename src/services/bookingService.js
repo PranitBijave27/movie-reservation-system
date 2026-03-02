@@ -154,3 +154,27 @@ exports.cancelBooking = async (bookingId) => {
     await booking.save();
     return booking;
 };
+
+exports.getUserBookings =async(userId)=>{
+    const bookings =await Booking.find({userId})
+        .populate({
+            path:"showId",
+            populate:[
+                {
+                    path:"movieId",
+                    select:"title duration posterUrl"
+                },
+                {
+                    path:"screenId",
+                    populate:{
+                        path: "theaterId",
+                        select: "name city"
+                    }
+                }
+            ]
+        }).populate({
+            path:"seats",
+            select:"row number"
+        }).sort({createdAt:-1});
+    return bookings;
+}
