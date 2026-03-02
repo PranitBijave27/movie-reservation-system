@@ -21,6 +21,8 @@ exports.loginUser = async (email, password) => {
   const match = await user.comparePassword(password);
   if (!match) throw new Error("Invalid credentials");
   const token = generateToken(user._id);
-
-  return { user, token };
+ 
+  const userObject = user.toObject();
+  delete userObject.password; //prevents password sending to frontend
+  return { user: userObject, token };
 };
