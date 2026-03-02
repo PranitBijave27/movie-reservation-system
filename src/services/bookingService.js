@@ -102,13 +102,17 @@ exports.getSeatAvailabilty=async(showId)=>{
     return result;
 }
 
-exports.confirmBooking = async (bookingId) => {
+exports.confirmBooking = async (bookingId,userId) => {
 
     const booking = await Booking.findById(bookingId);
     if (!booking)
         throw new Error("Booking not found");
     if (booking.status !== "pending")
         throw new Error("Booking cannot be confirmed");
+
+    if(booking.userId.toString() !== userId.toString())
+    throw new Error("Unauthorized");
+
     if (booking.expiresAt && booking.expiresAt < new Date())
         throw new Error("Booking expired");
 
@@ -120,13 +124,16 @@ exports.confirmBooking = async (bookingId) => {
     return booking;
 }
 
-exports.cancelBooking = async (bookingId) => {
+exports.cancelBooking = async (bookingId,userId) => {
     const booking = await Booking.findById(bookingId);
     if (!booking)
         throw new Error("Booking not found");
     if (booking.status === "cancelled")
         throw new Error("Booking already cancelled");
 
+    if(booking.userId.toString() !== userId.toString())
+        throw new Error("Unauthorized");
+    
     const show = await Show.findById(booking.showId);
 
     if (!show)
