@@ -32,9 +32,4 @@ router.get(
   bookingController.getMyBookings
 );
 
-// temporary for testing
-router.get(
-  "/user/:userId", 
-  bookingController.getMyBookings
-);
 module.exports = router;

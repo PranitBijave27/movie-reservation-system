@@ -50,7 +50,7 @@ const bookingSchema = new mongoose.Schema(
 bookingSchema.index({showId:1,seats:1});
 
 // When booking expires → Mongo automatically deletes it.
-bookingSchema.index({expiresAt:1},{expireAfterSeconds:0});
+// bookingSchema.index({expiresAt:1},{expireAfterSeconds:0}); TTL index
 
 
 module.exports = mongoose.model("Booking", bookingSchema);
