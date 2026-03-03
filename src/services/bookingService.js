@@ -4,7 +4,11 @@ const Show = require("../models/Show");
 
 exports.createBooking = async ({ userId, showId, seatIds }) => {
 
+    if(seatIds.length>10){
+        throw new Error("More that 10 seats booking not allowed");
+    }
     const show = await Show.findById(showId); // show verification
+
     if(!show){
         throw new Error("Show not found");
     }
@@ -12,6 +16,10 @@ exports.createBooking = async ({ userId, showId, seatIds }) => {
     if(show.status !== "scheduled")
         throw new Error("Show not available");
 
+    if(show.startTime <new Date()) {
+        throw new Error("sorry either show already started or completed");
+    }
+    
     const seats=await Seat.find({
         _id:{$in:seatIds},
         screenId:show.screenId
