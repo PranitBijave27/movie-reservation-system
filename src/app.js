@@ -16,9 +16,6 @@ app.use(express.urlencoded({extended:true}));
 
 
 app.use("/api/auth", authRoutes);
-app.get("/", (req, res) => {
-  res.json({data:"API Running"});
-});
 app.use("/api/movies",movieRoutes);
 app.use("/api/theaters", theaterRoutes);
 app.use("/api/screens", screenRoutes);
@@ -26,8 +23,10 @@ app.use("/api/shows", showRoutes);
 app.use("/api/bookings", bookingRoutes);
 
 
+//error handler
 app.use((err,req,res,next)=>{
   res.status(400).json({
+    success:false,
     error:err.message
   });
 });
