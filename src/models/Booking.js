@@ -18,7 +18,8 @@ const bookingSchema = new mongoose.Schema(
     {
       type:mongoose.Schema.Types.ObjectId,
       ref:"Seat",
-      required:true
+      required:true,
+      validate: [val => val.length > 0, 'At least one seat is required']
     }
   ],
 
@@ -48,6 +49,7 @@ const bookingSchema = new mongoose.Schema(
 {timestamps:true}
 );
 bookingSchema.index({showId:1,seats:1});
+bookingSchema.index({ userId: 1 });
 
 // When booking expires → Mongo automatically deletes it.
 // bookingSchema.index({expiresAt:1},{expireAfterSeconds:0}); TTL index
