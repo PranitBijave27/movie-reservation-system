@@ -7,7 +7,7 @@ const theaterRoutes = require("./routes/theaterRoutes");
 const screenRoutes = require("./routes/screenRoutes");
 const showRoutes = require("./routes/showRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
-
+const startAutomation=require("./utils/automation");
 
 const app = express();
 
@@ -33,11 +33,13 @@ app.use((err,req,res,next)=>{
 });
 
 
-const PORT = process.env.PORT || 5000;
+
 const startServer = async () => {
   try {
     // 1.db connection
     await connectDB();
+
+    startAutomation();
     //2 start server
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
