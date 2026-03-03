@@ -1,0 +1,16 @@
+.movie-section {
+  padding: 80px 120px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.movie-section h2 {
+  margin-bottom: 40px;
+  font-size: 28px;
+}
+
+.movie-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 40px;
+}
