@@ -7,7 +7,6 @@ const adminMiddleware = require("../middleware/adminMiddleware");
 router.post("/",
     authMiddleware,
     adminMiddleware, 
-    screenController.createScreen
-);
+    screenController.createScreen);
 
 module.exports = router;
