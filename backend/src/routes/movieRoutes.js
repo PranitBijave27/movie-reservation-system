@@ -8,7 +8,8 @@ const adminMiddleware = require("../middleware/adminMiddleware");
 router.post("/",
     authMiddleware,
     adminMiddleware,
-    movieController.creatMovie)
+    movieController.creatMovie);
+
 router.get("/",movieController.getMovies);
 router.get("/:id",movieController.getMovie);
 
