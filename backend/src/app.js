@@ -23,7 +23,9 @@ app.use("/api/theaters", theaterRoutes);
 app.use("/api/screens", screenRoutes);
 app.use("/api/shows", showRoutes);
 app.use("/api/bookings", bookingRoutes);
-
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
 
 //error handler
 app.use((err,req,res,next)=>{
