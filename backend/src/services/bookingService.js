@@ -1,6 +1,8 @@
 const Seat=require("../models/Seat");
 const Booking = require("../models/Booking");
 const Show = require("../models/Show");
+const simulatePayment=require("../services/paymentService");
+
 const mongoose=require("mongoose");
 
 exports.createBooking = async ({ userId, showId, seatIds }) => {
@@ -12,7 +14,7 @@ exports.createBooking = async ({ userId, showId, seatIds }) => {
         if(seatIds.length>10){
             throw new Error("More than 10 seats booking are not allowed");
         }
-        const show = await Show.findById(showId); // show verification
+        const show = await Show.findById(showId).session(session); // show verification
 
         if(!show){
             throw new Error("Show not found");
@@ -28,7 +30,7 @@ exports.createBooking = async ({ userId, showId, seatIds }) => {
         const seats=await Seat.find({
             _id:{$in:seatIds},
             screenId:show.screenId
-        });
+        }).session(session);
 
         if (seats.length !== seatIds.length)
             throw new Error("Invalid seats selected");
@@ -37,12 +39,11 @@ exports.createBooking = async ({ userId, showId, seatIds }) => {
             showId,
             seats: { $in: seatIds },
             status: { $in: ["pending","confirmed"] } //Pending These are seats currently in someone's "cart"
-        });
+        }).session(session);
 
         if (existing)
             throw new Error("Some seats already booked");
 
-        
         let totalAmount = seats.reduce((sum, seat) => {
             let multiplier = 1;
             if(seat.type === "premium") multiplier =1.45;
@@ -51,7 +52,6 @@ exports.createBooking = async ({ userId, showId, seatIds }) => {
             return sum + show.basePrice * multiplier;
         },0);
 
-        totalAmount = Math.round(totalAmount);
         totalAmount = Math.ceil(totalAmount);
         
         if (totalAmount % 10 === 0) {
@@ -60,13 +60,16 @@ exports.createBooking = async ({ userId, showId, seatIds }) => {
         //5 minutes lock for seat
         const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-        const booking=await Booking.create({
+        const booking=await Booking.create(
+            [{
             userId,
             showId,
             seats:seatIds,
             totalAmount,
             expiresAt
-        });
+            }],
+            {session}
+    );
         await session.commitTransaction();
         session.endSession();
 
@@ -126,8 +129,10 @@ exports.getSeatAvailabilty=async(showId)=>{
 exports.confirmBooking = async (bookingId,userId) => {
 
     const booking = await Booking.findById(bookingId);
+
     if (!booking)
         throw new Error("Booking not found");
+
     if (booking.status !== "pending")
         throw new Error("Booking cannot be confirmed");
 
@@ -136,6 +141,17 @@ exports.confirmBooking = async (bookingId,userId) => {
 
     if (booking.expiresAt && booking.expiresAt < new Date())
         throw new Error("Booking expired");
+
+    const payment=await simulatePayment({
+        amount:booking.totalAmount,
+        userId:booking.userId,
+        bookingId:booking._id
+    });
+
+    if(!payment.success){
+        throw new Error("Payment failed, please try again");
+    }
+
 
     booking.status = "confirmed";
     booking.paymentStatus = "paid";

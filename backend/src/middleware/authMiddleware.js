@@ -5,7 +5,7 @@ const authMiddleware = async (req,res,next)=>{
   try{
     const header = req.headers.authorization;
 
-    if(!header || !header.startsWith("Bearer"))
+    if(!header || !header.toLowerCase().startsWith("bearer "))
       return res.status(401).json({error:"Unauthorized"});
 
     const token = header.split(" ")[1];
