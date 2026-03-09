@@ -1,618 +1,261 @@
-# 🎟️ Movie Ticket Reservation System (Backend)
+#  🎟️ Distributed Movie Ticket Reservation System
 
-A **backend-driven cinema ticket reservation system inspired by platforms like BookMyShow**.
+A **production-grade cinema ticket reservation backend** inspired by platforms like BookMyShow.
 
-This project implements the **core reservation engine** used by cinema booking platforms. It manages theaters, screens, seats, shows, and bookings while ensuring **seat availability integrity and booking lifecycle management**.
+Built to solve real-world engineering challenges: **concurrent seat booking, race condition prevention, booking lifecycle management, and automated expiry handling**.
 
-The system focuses on **backend architecture, booking state management, authentication, and automated system tasks**.
-
----
-
-# 🚀 Features
-
-### 🔐 Authentication & Authorization
-
-* JWT-based authentication
-* Secure login & registration
-* Role-based access control (Admin / User)
-* Protected routes using middleware
+> **Live API:** https://movie-reservation-api-2ub6.onrender.com  
+> **Tech Stack:** Node.js · Express · MongoDB · Mongoose · JWT · node-cron
 
 ---
 
-### 🎬 Movie Management
+## ⚙️ Key Engineering Decisions
 
-Admins can manage movies including:
+### 1. Concurrent Booking & Double Booking Prevention
+The hardest problem in any reservation system is two users booking the same seat simultaneously.
 
-* Create movies
-* Archive movies
-* Store metadata such as:
+**Solution:** MongoDB transactions with session-scoped queries.
 
-  * title
-  * description
-  * genre
-  * duration
-  * language
-  * poster
+```js
+const session = await mongoose.startSession();
+session.startTransaction();
 
----
+// All queries use the same session — atomic operation
+const existing = await Booking.findOne({ seats: { $in: seatIds } }).session(session);
+const booking = await Booking.create([{...}], { session });
 
-### 🏢 Theater Infrastructure
-
-The system models real cinema structure:
-
-```
-Theater
-   ↓
-Screen
-   ↓
-Seat
-   ↓
-Show
+await session.commitTransaction();
 ```
 
-Capabilities:
-
-* Create theaters
-* Create screens
-* Automatically generate seats
+Every query inside the booking flow runs within the same session, ensuring atomicity. If any step fails, the entire transaction rolls back — seats are never partially booked.
 
 ---
 
-# 🎥 Show Scheduling
+### 2. Seat Locking with Automatic Expiry
+Seats need to be temporarily locked while a user is in the checkout flow.
 
-Admins schedule movie shows with:
-
-* Movie
-* Screen
-* Start time
-* Base ticket price
-
-The system automatically:
-
-* Calculates show end time
-* Prevents overlapping shows
-
----
-
-# 🪑 Seat Availability System
-
-Seat availability is **derived dynamically from bookings**.
-
-A seat becomes unavailable when:
+**Solution:** Pending bookings with TTL + cron-based expiry.
 
 ```
-booking.status = pending OR confirmed
+User selects seats → booking created (status: pending, expiresAt: +5min)
+                           ↓
+              User confirms → status: confirmed
+                           ↓
+              Timer expires → cron releases seats (status: expired)
 ```
 
-This prevents **double booking**.
+A cron job runs every minute, finds expired pending bookings, and releases the seats back to available — keeping the system consistent without manual intervention.
 
 ---
 
-# 🎟️ Booking System
-
-Users can:
-
-1. Browse movies
-2. View show timings
-3. Check seat availability
-4. Reserve seats
-
-Booking lifecycle:
-
-```
-pending → confirmed → completed
-pending → expired
-pending → cancelled → refunded
-```
-
-When booking is created:
-
-```
-status = pending
-expiresAt = 5 minutes
-```
-
-Seats are temporarily locked until confirmation.
+### 3. Dynamic Seat Generation
+Instead of hardcoding seat data, seats are generated dynamically based on screen configuration.
 
 ---
 
-# ⚙️ Automation
-
-Background cron jobs maintain system consistency.
-
-### Expire Pending Bookings
+### 4. Dynamic Pricing by Seat Type
+Ticket price is calculated at booking time based on seat type and base price.
 
 ```
-pending bookings
-+ expired timer
-→ status = expired
+Regular  → basePrice × 1.0
+Premium  → basePrice × 1.45
+VIP      → basePrice × 1.75
 ```
 
-### Complete Shows
-
-```
-show.endTime < currentTime
-→ show.status = completed
-```
+Psychological pricing is also applied (prices ending in 0 are reduced by 1) — mimicking real-world ticketing platforms.
 
 ---
 
-# 🏗️ Architecture
-
-The backend follows a **layered architecture**.
-
+### 5. Booking Lifecycle State Machine
 ```
-routes
-   ↓
-controllers
-   ↓
-services
-   ↓
-models
+pending ──► confirmed
+   │
+   ├──► expired   (cron job — timer ran out)
+   │
+   └──► cancelled (user cancelled before payment)
 ```
 
-| Layer       | Responsibility                 |
-| ----------- | ------------------------------ |
-| Routes      | Define API endpoints           |
-| Controllers | Handle HTTP requests           |
-| Services    | Business logic                 |
-| Models      | Database schemas               |
-| Middleware  | Authentication / Authorization |
-| Utils       | Helper utilities               |
+`expired` and `cancelled` are distinct states — expired is system-triggered, cancelled is user-triggered. This distinction matters for analytics and refund logic.
 
 ---
 
-# 📡 API Documentation
-
-## 🔐 Authentication
-
-### Register User
+## 🏗️ Architecture
 
 ```
-POST /api/auth/register
+Client Request
+      ↓
+   Routes          → Define API endpoints
+      ↓
+ Controllers       → Handle HTTP, parse request/response
+      ↓
+  Services         → Core business logic (booking, pricing, validation)
+      ↓
+   Models          → MongoDB schemas via Mongoose
+      ↓
+  MongoDB Atlas    → Persistent storage with transactions
 ```
 
-Request Body
-
-```json
-{
-  "name": "Pranit",
-  "email": "pranit@email.com",
-  "password": "123456"
-}
-```
+Background jobs (node-cron) run independently to handle expiry and show status updates.
 
 ---
 
-### Login
+## 🗄️ Data Models
 
 ```
-POST /api/auth/login
+User ──────────────────────────────► Booking
+                                        │
+Movie ──► Show ──► Screen ──► Seat ─────┘
+              └──► Theater
 ```
 
-Request Body
-
-```json
-{
-  "email": "pranit@email.com",
-  "password": "123456"
-}
-```
-
-Response
-
-```json
-{
-  "token": "JWT_TOKEN"
-}
-```
+| Model | Key Fields |
+|---|---|
+| User | name, email, passwordHash, role |
+| Movie | title, genre, duration, language, status |
+| Theater | name, city, address |
+| Screen | theaterId, rows, seatsPerRow |
+| Seat | screenId, row, number, type (regular/premium/vip) |
+| Show | movieId, screenId, startTime, endTime, basePrice, status |
+| Booking | userId, showId, seats[], status, totalAmount, expiresAt, transactionId |
 
 ---
 
-# 🎬 Movies
+## 📡 API Reference
 
-### Get All Movies
+### Auth
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/api/auth/register` | Register user | ❌ |
+| POST | `/api/auth/login` | Login, returns JWT | ❌ |
 
-```
-GET /api/movies
-```
+### Movies
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| GET | `/api/movies` | List all movies | ❌ |
+| GET | `/api/movies/:id` | Get movie details | ❌ |
+| POST | `/api/movies` | Create movie | Admin |
+| PATCH | `/api/movies/:id/archive` | Archive movie | Admin |
 
-No body required.
+### Theater & Screens
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/api/theaters` | Create theater | Admin |
+| POST | `/api/screens` | Create screen + generate seats | Admin |
 
----
+### Shows
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/api/shows` | Schedule a show | Admin |
+| GET | `/api/shows/movie/:movieId` | Get shows for a movie | ❌ |
 
-### Get Movie By ID
+### Seats
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| GET | `/api/bookings/show/:showId/availability` | Get available/booked seats | ❌ |
 
-```
-GET /api/movies/:id
-```
-
-Example
-
-```
-GET /api/movies/64f123abc
-```
-
----
-
-### Create Movie (Admin)
-
-```
-POST /api/movies
-```
-
-Headers
-
-```
-Authorization: Bearer JWT_TOKEN
-```
-
-Request Body
-
-```json
-{
-  "title": "Interstellar",
-  "description": "Epic science fiction film",
-  "duration": 169,
-  "genre": ["Sci-Fi"],
-  "language": "English",
-  "releaseDate": "2014-11-07",
-  "posterUrl": "https://image-url"
-}
-```
+### Bookings
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/api/bookings` | Create booking (locks seats 5 min) | User |
+| PATCH | `/api/bookings/:id/confirm` | Confirm & pay | User |
+| PATCH | `/api/bookings/:id/cancel` | Cancel booking | User |
+| GET | `/api/bookings/me` | Get user booking history | User |
 
 ---
 
-### Archive Movie
+## 🚀 Getting Started
 
-```
-PATCH /api/movies/:id/archive
-```
+### Prerequisites
+- Node.js v18+
+- MongoDB Atlas account (or local MongoDB with Replica Set for transactions)
 
-Headers
+### Installation
 
-```
-Authorization: Bearer JWT_TOKEN
-```
+```bash
+# Clone the repo
+git clone https://github.com/PranitBijave27/movie-reservation-system.git
+cd movie-reservation-system
 
-No body required.
-
----
-
-# 🏢 Theater Infrastructure
-
-### Create Theater
-
-```
-POST /api/theaters
-```
-
-Headers
-
-```
-Authorization: Bearer JWT_TOKEN
-```
-
-Request Body
-
-```json
-{
-  "name": "PVR Phoenix Mall",
-  "city": "Mumbai",
-  "address": "Lower Parel"
-}
-```
-
----
-
-### Create Screen
-
-```
-POST /api/screens
-```
-
-Headers
-
-```
-Authorization: Bearer JWT_TOKEN
-```
-
-Request Body
-
-```json
-{
-  "theaterId": "THEATER_ID",
-  "name": "Screen 1",
-  "rows": ["A", "B", "C", "D"],
-  "seatsPerRow": 10
-}
-```
-
-This automatically generates seats.
-
----
-
-# 🎥 Shows
-
-### Create Show
-
-```
-POST /api/shows
-```
-
-Headers
-
-```
-Authorization: Bearer JWT_TOKEN
-```
-
-Request Body
-
-```json
-{
-  "movieId": "MOVIE_ID",
-  "screenId": "SCREEN_ID",
-  "startTime": "2026-03-10T18:00:00Z",
-  "basePrice": 200
-}
-```
-
----
-
-### Get Shows For Movie
-
-```
-GET /api/shows/movie/:movieId
-```
-
-Example
-
-```
-GET /api/shows/movie/64f123abc
-```
-
----
-
-# 🪑 Seat Availability
-
-### Get Seat Availability
-
-```
-GET /api/bookings/show/:showId/availability
-```
-
-Example
-
-```
-GET /api/bookings/show/64fshow123/availability
-```
-
-Response
-
-```json
-[
-  {
-    "_id": "seat1",
-    "row": "A",
-    "number": 1,
-    "isBooked": false
-  }
-]
-```
-
----
-
-# 🎟️ Bookings
-
-### Create Booking
-
-```
-POST /api/bookings
-```
-
-Headers
-
-```
-Authorization: Bearer JWT_TOKEN
-```
-
-Request Body
-
-```json
-{
-  "showId": "SHOW_ID",
-  "seatIds": ["SEAT_ID_1", "SEAT_ID_2"]
-}
-```
-
-Creates booking:
-
-```
-status = pending
-expiresAt = 5 minutes
-```
-
----
-
-### Confirm Booking
-
-```
-PATCH /api/bookings/:bookingId/confirm
-```
-
-Headers
-
-```
-Authorization: Bearer JWT_TOKEN
-```
-
-Updates booking:
-
-```
-status = confirmed
-paymentStatus = paid
-```
-
----
-
-### Cancel Booking
-
-```
-PATCH /api/bookings/:bookingId/cancel
-```
-
-Headers
-
-```
-Authorization: Bearer JWT_TOKEN
-```
-
-If payment completed:
-
-```
-status = cancelled
-paymentStatus = refunded
-```
-
----
-
-### Get User Booking History
-
-```
-GET /api/bookings/me
-```
-
-Headers
-
-```
-Authorization: Bearer JWT_TOKEN
-```
-
-Returns all bookings for the logged-in user.
-
----
-
-# 🗄️ Database Models
-
-```
-User
-Movie
-Theater
-Screen
-Seat
-Show
-Booking
-```
-
-Relationships
-
-```
-Movie
-   ↓
-Show
-   ↓
-Screen
-   ↓
-Theater
-```
-
-Bookings reference:
-
-```
-User
-Show
-Seats
-```
-
----
-
-# 🛠️ Tech Stack
-
-Backend
-
-* Node.js
-* Express.js
-* MongoDB
-* Mongoose
-
-Authentication
-
-* JWT
-* bcrypt
-
-Automation
-
-* node-cron
-
-Tools
-
-* Postman
-* MongoDB Atlas
-* Git
-
----
-
-# 📦 Installation
-
-Clone the repository
-
-```
-git clone https://github.com/yourusername/movie-reservation-system.git
-```
-
-Install dependencies
-
-```
+# Install dependencies
 npm install
-```
-
-Create `.env`
 
 ```
-PORT=5000
-MONGO_URI=your_mongodb_uri
-JWT_SECRET=your_secret_key
+
+### Environment Variables
+
+```env
+PORT=3000
+MONGO_URI=mongo atlas uri
+JWT_SECRET=jwt secret
+
 ```
 
-Run server
+> ⚠️ MongoDB transactions require a **Replica Set**. Use MongoDB Atlas (free tier works) or configure a local replica set.
 
-```
+### Run
+
+```bash
+# Development
+npm run dev
+
+# Production
 npm start
 ```
 
 ---
 
-# 🧪 Example Booking Flow
+## 🔁 Example Booking Flow
 
-```
-User Login
-↓
-Browse Movies
-↓
-View Shows
-↓
-Check Seat Availability
-↓
-Reserve Seats
-↓
-Confirm Booking
+```bash
+# 1. Register
+POST /api/auth/register
+{ "name": "Pranit", "email": "pranit@email.com", "password": "123456" }
+
+# 2. Login → get JWT token
+POST /api/auth/login
+
+# 3. Browse movies
+GET /api/movies
+
+# 4. View shows for a movie
+GET /api/shows/movie/:movieId
+
+# 5. Check seat availability
+GET /api/bookings/show/:showId/availability
+
+# 6. Reserve seats (locked for 5 minutes)
+POST /api/bookings
+{ "showId": "...", "seatIds": ["...", "..."] }
+
+# 7. Confirm booking (simulated payment)
+PATCH /api/bookings/:bookingId/confirm
 ```
 
 ---
 
-# 📈 Future Improvements
+## 🛠️ Tech Stack
 
-Possible improvements:
-
-* Payment gateway integration
-* Real-time seat updates
-* Admin dashboard
-* City-based search
-* Dynamic seat pricing
-* API rate limiting
+| Category | Technology | Reason |
+|---|---|---|
+| Runtime | Node.js | Async I/O, ideal for concurrent requests |
+| Framework | Express.js | Lightweight, unopinionated |
+| Database | MongoDB + Mongoose | Flexible schema, Atlas-managed replica set for transactions |
+| Auth | JWT + bcrypt | Stateless authentication |
+| Validation | Joi | Schema-based request validation |
+| Automation | node-cron | Booking expiry, show completion jobs |
+| Deployment | Render | Simple Node.js deployment |
 
 ---
 
-# 👨‍💻 Author
+## 📈 Planned Improvements (v2)
 
-Backend project focused on **reservation system design, booking lifecycle management, and scalable backend architecture**.
+- [ ] PostgreSQL migration for stronger ACID guarantees
+- [ ] Redis caching for seat availability
+- [ ] Real-time seat updates via WebSockets
+- [ ] Rate limiting
+---
+
+## 👨‍💻 Author
+
+**Pranit**  
+[GitHub](https://github.com/PranitBijave27) · [LinkedIn](https://linkedin.com/in/pranitbijave)
