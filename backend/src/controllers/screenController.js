@@ -4,5 +4,9 @@ const wrapAsync = require("../utils/wrapAsync");
 
 exports.createScreen =wrapAsync( async (req,res,next)=>{
     const screen = await screenService.createScreen(req.body);
-    res.status(201).json(screen);
+    res.status(201).json({
+        success: true,
+        message: "Screen created successfully with seats auto generated",
+        data: screen
+  });
 });

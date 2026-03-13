@@ -11,6 +11,8 @@ router.post("/",
     showController.createShow
 );
 
+router.get("/:id", showController.getShowById);
+
 router.get("/movie/:movieId", showController.getShowsByMovie);
 
 module.exports = router;

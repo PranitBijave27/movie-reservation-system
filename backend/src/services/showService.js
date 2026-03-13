@@ -16,7 +16,7 @@ exports.createShow = async (data) => {
         throw new Error("Screen not found");
     }
     const start=new Date(startTime);
-    const end=new Date(start+ (movie.duration+CLEANING_BUFFER) *60000);
+    const end=new Date(start.getTime() + (movie.duration+CLEANING_BUFFER) *60000);
 
     const overlapping=await Show.findOne({
         screenId,
@@ -49,4 +49,10 @@ exports.getShowsByMovie=async (movieId)=>{
         status:"scheduled"
     }).populate("screenId")
       .sort({startTime:1});
+};
+
+exports.getShowById = async (id) => {
+  const show = await Show.findById(id);
+  if(!show) throw new Error("Show not found");
+  return show;
 };

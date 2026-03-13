@@ -22,10 +22,11 @@ exports.archiveMovie=async(id)=>{
     const movie=await Movie.findByIdAndUpdate(
         id,
         {status:"archived"},
-        { returnDocument: 'after' }
+        { new: true }
     );
     if(!movie) {
         throw new Error("Movie not found");
     }
+    return movie;
 }
 
