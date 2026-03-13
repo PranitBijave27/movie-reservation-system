@@ -2,7 +2,7 @@
 
 A production-ready RESTful backend for a movie ticketing system built with Node.js, Express.js, and MongoDB. Features JWT authentication, role-based access control, MongoDB transactions for atomic seat booking, automated booking expiry, and dynamic pricing.
 
-> 🚀 **Live API:** [https://movie-reservation-api-2ub6.onrender.com](https://movie-reservation-api-2ub6.onrender.com)
+> 🚀 **Live API:** [https://movie-reservation-api-2ub6.onrender.com](https://movie-reservation-api-2ub6.onrender.com)  
 > 📖 **API Docs:** [https://movie-reservation-api-2ub6.onrender.com/api-docs](https://movie-reservation-api-2ub6.onrender.com/api-docs)
 
 ---
