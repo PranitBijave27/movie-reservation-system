@@ -10,6 +10,10 @@ const options = {
     },
     servers: [
       {
+        url: "https://movie-reservation-api-2ub6.onrender.com",
+        description: "Production server"
+      },
+      {
         url: "http://localhost:3000",
         description: "Development server"
       }
