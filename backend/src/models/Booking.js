@@ -14,14 +14,16 @@ const bookingSchema = new mongoose.Schema(
     required:true
   },
 
-  seats:[
-    {
+  seats:{
+    type:[{
       type:mongoose.Schema.Types.ObjectId,
       ref:"Seat",
-      required:true,
-      validate: [val => val.length > 0, 'At least one seat is required']
+    }],
+    validate:{
+      validator:val=>val.length>0,
+      message:"At least one seat is required"
     }
-  ],
+  },
 
   totalAmount:{
     type:Number,

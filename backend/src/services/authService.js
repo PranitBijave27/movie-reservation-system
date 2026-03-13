@@ -10,7 +10,10 @@ exports.registerUser = async (data) => {
   const user = await User.create({ name, email, password });
   const token = generateToken(user._id);
 
-  return { user, token };
+  const userObject = user.toObject();
+  delete userObject.password; 
+
+  return { user: userObject, token };
 };
 
 exports.loginUser = async (email, password) => {
