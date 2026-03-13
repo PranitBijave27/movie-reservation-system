@@ -4,7 +4,7 @@ const options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Distributed Movie Ticketing System API",
+      title: "CineBook — Movie Ticketing System",
       version: "1.0.0",
       description: "Backend API for Movie Ticketing System",
     },
