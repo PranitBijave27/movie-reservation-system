@@ -1,17 +1,17 @@
 
 const simulatePayment=async({amount,userId,bookingId})=>{
-    await new Promise(resolve=>{
+    return new Promise(resolve=>{
         const isSuccess=Math.random() <0.9;
         if(isSuccess){
-            return {
-                success:true,
+            resolve({
+                success: true,
                 amount
-            }
+            });
         }else{
-            return {
+            resolve({
                 success: false,
-                error: 'Payment declined'
-            };
+                error: "Payment declined"
+            });
         }
     })
 };
