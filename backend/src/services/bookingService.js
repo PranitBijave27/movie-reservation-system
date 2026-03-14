@@ -1,7 +1,7 @@
 const Seat=require("../models/Seat");
 const Booking = require("../models/Booking");
 const Show = require("../models/Show");
-const simulatePayment=require("../services/paymentService");
+const {simulatePayment}=require("../services/paymentService");
 
 const mongoose=require("mongoose");
 
