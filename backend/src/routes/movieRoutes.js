@@ -11,6 +11,8 @@ router.post("/",
     movieController.creatMovie);
 
 router.get("/",movieController.getMovies);
+router.get("/search",movieController.searchMovies);
+
 router.get("/:id",movieController.getMovie);
 
 router.patch("/:id/archive",

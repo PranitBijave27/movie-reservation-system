@@ -1,12 +1,13 @@
 const mongoose = require("mongoose");
 
-const movieSchema=new mongoose.Schema({
-    title:{
-        type: String,
-        required: true,
-        trim: true,
-        maxlength: 100,
-        index:true,
+const movieSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100,
+      index: true,
     },
     description: {
       type: String,
@@ -36,7 +37,7 @@ const movieSchema=new mongoose.Schema({
     language: {
       type: String,
       required: true,
-      lowercase:true,
+      lowercase: true,
     },
     releaseDate: {
       type: Date,
@@ -45,21 +46,21 @@ const movieSchema=new mongoose.Schema({
     posterUrl: {
       type: String,
       default: "",
-      match:/^https?:\/\/.+/
+      match: /^https?:\/\/.+/,
     },
-    status:{
-    type:String,
-    enum:["active","inactive","archived"],
-    default:"active"
+    status: {
+      type: String,
+      enum: ["active", "inactive", "archived"],
+      default: "active",
     },
-    rating:{
-    type:Number,
-     min:0,
-     max:10,
-     default:0
-    }
+    rating: {
+      type: Number,
+      min: 0,
+      max: 10,
+      default: 0,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-module.exports=mongoose.model("Movie",movieSchema);
+module.exports = mongoose.model("Movie", movieSchema);

@@ -30,3 +30,9 @@ exports.archiveMovie=async(id)=>{
     return movie;
 }
 
+exports.searchMovies =async(query)=>{
+    return await Movie.find({
+        title:{$regex:query,$options:'i'},
+        status:'active'
+    });
+};
