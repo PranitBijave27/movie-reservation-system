@@ -1,19 +1,18 @@
-const getGeminiRecommendation = async (prompt) => {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }]
-        }]
-      })
-    }
-  );
+const { GoogleGenAI } = require("@google/genai");
 
-  const data = await response.json();
-  return data.candidates[0].content.parts[0].text;
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+const getGeminiRecommendation = async (prompt) => {
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-1.5-flash", 
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    });
+    return result.text;
+  } catch (error) {
+    console.error("SDK Error:", error.message);
+    throw new Error("Failed to get recommendation");
+  }
 };
 
 module.exports = getGeminiRecommendation;
