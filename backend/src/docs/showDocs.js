@@ -89,3 +89,50 @@
  *       404:
  *         description: Show not found
  */
+
+/**
+ * @swagger
+ * /api/shows/{showId}/recommend-seats:
+ *   get:
+ *     summary: Get AI powered seat recommendations
+ *     tags: [Shows]
+ *     parameters:
+ *       - in: path
+ *         name: showId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Show id
+ *       - in: query
+ *         name: count
+ *         schema:
+ *           type: number
+ *         description: Number of seats needed
+ *         example: 2
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [regular, premium, vip, any]
+ *         description: Preferred seat type
+ *         example: premium
+ *       - in: query
+ *         name: budget
+ *         schema:
+ *           type: number
+ *         description: Maximum budget per seat
+ *         example: 400
+ *       - in: query
+ *         name: request
+ *         schema:
+ *           type: string
+ *         description: Special requests
+ *         example: seats together near exit
+ *     responses:
+ *       200:
+ *         description: AI recommended seats with reasoning
+ *       404:
+ *         description: Show not found
+ *       400:
+ *         description: No seats available within budget
+ */

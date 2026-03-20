@@ -122,3 +122,24 @@
  *       404:
  *         description: Movie not found
  */
+
+/**
+ * @swagger
+ * /api/movies/search:
+ *   get:
+ *     summary: Search movies by title
+ *     tags: [Movies]
+ *     parameters:
+ *       - in: query
+ *         name: title
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Movie title to search
+ *         example: Avengers
+ *     responses:
+ *       200:
+ *         description: List of matching movies
+ *       404:
+ *         description: No movies found
+ */
