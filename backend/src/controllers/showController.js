@@ -27,3 +27,16 @@ exports.getShowById = wrapAsync(async (req,res,next) => {
         data: show
   });
 });
+
+exports.recommendSeats = wrapAsync(async (req, res) => {
+  const { count, type, budget, request } = req.query;
+  const recommendation = await showService.recommendSeats(
+    req.params.showId,
+    { count, type, budget, request }
+  );
+  res.status(200).json({
+    success: true,
+    message: "Seat recommendation generated successfully",
+    data: recommendation
+  });
+});

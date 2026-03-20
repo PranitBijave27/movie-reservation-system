@@ -16,4 +16,5 @@ router.post("/",
 router.get("/movie/:movieId", showController.getShowsByMovie);
 router.get("/:id", showController.getShowById);
 
+router.get("/:showId/recommend-seats", showController.recommendSeats);
 module.exports = router;
