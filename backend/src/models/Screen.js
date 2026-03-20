@@ -23,7 +23,7 @@ const screenSchema = new mongoose.Schema(
 
   layoutType:{
     type:String,
-    enum:["classic","premium","recliner"],
+    enum:["standard", "classic", "imax", "4dx"],
     default:"classic"
   },
 

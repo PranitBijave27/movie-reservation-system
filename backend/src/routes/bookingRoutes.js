@@ -2,8 +2,9 @@ const express = require("express");
 const router = express.Router({ mergeParams: true });
 const bookingController = require("../controllers/bookingController");
 const authMiddleware = require("../middleware/authMiddleware");
+const { validateBooking } = require("../validators/bookingValidator");
 
-router.post("/",authMiddleware, bookingController.createBooking);
+router.post("/",authMiddleware,validateBooking, bookingController.createBooking);
 
 router.get("/show/:showId/seats",bookingController.getBookedSeats);
 router.get("/show/:showId/availability",bookingController.getSeatAvailabilty);

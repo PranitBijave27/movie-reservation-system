@@ -3,11 +3,12 @@ const router = express.Router({mergeParams:true});
 const movieController = require("../controllers/movieController");
 const authMiddleware = require("../middleware/authMiddleware");
 const adminMiddleware = require("../middleware/adminMiddleware");
-
+const { validateMovie } = require("../validators/movieValidator");
 
 router.post("/",
     authMiddleware,
     adminMiddleware,
+    validateMovie,
     movieController.creatMovie);
 
 router.get("/",movieController.getMovies);
