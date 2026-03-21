@@ -1,5 +1,6 @@
 const movieService = require("../services/movieService");
 const wrapAsync = require("../utils/wrapAsync");
+const AppError=require("../utils/AppError");
 
 exports.creatMovie = wrapAsync(async (req, res, next) => {
   const movie = await movieService.createMovie(req.body);
@@ -38,7 +39,7 @@ exports.archiveMovie = wrapAsync(async (req, res, next) => {
 });
 
 exports.searchMovies = wrapAsync(async (req, res) => {
-  const movies = movieService.searchMovies(req.query.title);
+  const movies = await movieService.searchMovies(req.query.title);
   res.status(200).json({
     success: true,
     message: "Movies fetched successfully",

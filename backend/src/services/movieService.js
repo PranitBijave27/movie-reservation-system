@@ -32,8 +32,14 @@ exports.archiveMovie=async(id)=>{
 }
 
 exports.searchMovies =async(query)=>{
-    return await Movie.find({
-        title:{$regex:query,$options:'i'},
-        status:'active'
+    if(!query || query.trim() === "")
+    throw new AppError("Search query is required", 400);
+    
+    const movies = await Movie.find({
+        title: { $regex: query, $options: "i" },
+        status: "active"
     });
+
+  if(movies.length === 0) throw new AppError("No movies found", 404);
+  return movies;
 };
