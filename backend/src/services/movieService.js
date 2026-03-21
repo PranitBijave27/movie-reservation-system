@@ -1,4 +1,5 @@
 const Movie=require("../models/Movie");
+const AppError=require("../utils/AppError");
 
 exports.createMovie=async(data)=>{
     const movie=await Movie.create(data);
@@ -13,7 +14,7 @@ exports.getAllMovies=async()=>{
 exports.getMovieById=async(id)=>{
     const movie=await Movie.findById(id);
     if(!movie){
-        throw new Error("movie not found");
+        throw new AppError("Movie not found", 404);            
     }
     return movie;
 }
@@ -25,7 +26,7 @@ exports.archiveMovie=async(id)=>{
         { new: true }
     );
     if(!movie) {
-        throw new Error("Movie not found");
+        throw new AppError("Movie not found", 404);            
     }
     return movie;
 }

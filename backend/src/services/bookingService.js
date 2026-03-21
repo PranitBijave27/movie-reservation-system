@@ -2,7 +2,7 @@ const Seat=require("../models/Seat");
 const Booking = require("../models/Booking");
 const Show = require("../models/Show");
 const {simulatePayment}=require("../services/paymentService");
-
+const AppError=require("../utils/AppError");
 const mongoose=require("mongoose");
 
 exports.createBooking = async ({ userId, showId, seatIds }) => {
@@ -12,19 +12,19 @@ exports.createBooking = async ({ userId, showId, seatIds }) => {
     try{
 
         if(seatIds.length>10){
-            throw new Error("More than 10 seats booking are not allowed");
+            throw new AppError("More than 10 seats not allowed", 400);
         }
         const show = await Show.findById(showId).session(session); // show verification
 
         if(!show){
-            throw new Error("Show not found");
+            throw new AppError("Show not found", 404);             
         }
 
         if(show.status !== "scheduled")
-            throw new Error("Show not available");
+            throw new AppError("Show not available", 400);         
 
         if(show.startTime <=new Date()) {
-            throw new Error("sorry either show already started or completed");
+            throw new AppError("Show already started or completed", 400);       
         }
         
         const seats=await Seat.find({
@@ -34,7 +34,7 @@ exports.createBooking = async ({ userId, showId, seatIds }) => {
         }).session(session);
 
         if (seats.length !== seatIds.length)
-            throw new Error("Invalid seats selected");
+            throw new AppError("Invalid seats selected", 400);     
 
         const existing = await Booking.findOne({
             showId,
@@ -43,7 +43,7 @@ exports.createBooking = async ({ userId, showId, seatIds }) => {
         }).session(session);
 
         if (existing)
-            throw new Error("Some seats already booked");
+            throw new AppError("Some seats already booked", 409);
 
         let totalAmount = seats.reduce((sum, seat) => {
             let multiplier = 1;
@@ -100,7 +100,7 @@ exports.getSeatAvailabilty=async(showId)=>{
     //find show
     const show=await Show.findById(showId);
     if(!show){
-        throw new Error("Show not found");
+        throw new AppError("Show not found", 404);             
     }
     //getting all seats
     const seats=await Seat.find({
@@ -132,16 +132,16 @@ exports.confirmBooking = async (bookingId,userId) => {
     const booking = await Booking.findById(bookingId);
 
     if (!booking)
-        throw new Error("Booking not found");
+        throw new AppError("Booking not found", 404);          
 
     if (booking.status !== "pending")
-        throw new Error("Booking cannot be confirmed");
+        throw new AppError("Booking cannot be confirmed", 400);
 
     if(booking.userId.toString() !== userId.toString())
-    throw new Error("Unauthorized");
+    throw new AppError("Unauthorized", 403);               
 
     if (booking.expiresAt && booking.expiresAt < new Date())
-        throw new Error("Booking expired");
+        throw new AppError("Booking expired", 400);            
 
     const payment=await simulatePayment({
         amount:booking.totalAmount,
@@ -150,7 +150,7 @@ exports.confirmBooking = async (bookingId,userId) => {
     });
 
     if(!payment.success){
-        throw new Error("Payment failed, please try again");
+        throw new AppError("Payment failed", 400);             
     }
 
 
@@ -166,20 +166,20 @@ exports.cancelBooking = async (bookingId,userId) => {
     const booking = await Booking.findById(bookingId);
     
     if (!booking)
-        throw new Error("Booking not found");
+        throw new AppError("Booking not found", 404);          
     if (booking.status === "cancelled")
-        throw new Error("Booking already cancelled");
+        throw new AppError("Booking already cancelled", 400);
     if (booking.status === "expired") {
-        throw new Error("Cannot cancel an expired booking");
+        throw new AppError("Cannot cancel within 2 hours", 400);
     }
 
     if(booking.userId.toString() !== userId.toString())
-        throw new Error("Unauthorized");
+        throw new AppError("Unauthorized", 403);               
     
     const show = await Show.findById(booking.showId);
 
     if (!show)
-        throw new Error("Show not found");
+        throw new AppError("Show not found", 404);
 
     const currentTime = new Date();
     const showTime = new Date(show.startTime);
@@ -187,7 +187,7 @@ exports.cancelBooking = async (bookingId,userId) => {
     const timeDifference = showTime - currentTime;
 
     if(timeDifference < 0) throw new Error("Cannot cancel a show that has already started or finished");
-    if (timeDifference < 2*60*60*1000) throw new Error("Cannot cancel within 2 hours of showtime");
+    if (timeDifference < 2*60*60*1000) throw new AppError("Cannot cancel within 2 hours", 400);
     
     booking.status = "cancelled";
 

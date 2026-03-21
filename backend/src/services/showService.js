@@ -3,6 +3,7 @@ const Movie = require("../models/Movie");
 const Screen = require("../models/Screen");
 const Seat = require("../models/Seat");
 const Booking=require("../models/Booking");
+const AppError =require("../utils/AppError");
 
 const getGeminiRecommendation = require("../utils/gemini");
 
@@ -13,11 +14,11 @@ exports.createShow = async (data) => {
   const { movieId, screenId, startTime, basePrice } = data;
   const movie = await Movie.findById(movieId);
   if (!movie) {
-    throw new Error("Movie not found");
+    throw new AppError("Movie not found", 404);
   }
   const screen = await Screen.findById(screenId);
   if (!screen) {
-    throw new Error("Screen not found");
+    throw new AppError("Screen not found", 404);
   }
   const start = new Date(startTime);
   const end = new Date(
@@ -36,7 +37,7 @@ exports.createShow = async (data) => {
   });
 
   if (overlapping) {
-    throw new Error("Show timing overlaps with existing show");
+    throw new AppError("Show timing overlaps", 409);
   }
   const show = await Show.create({
     movieId,
@@ -59,7 +60,7 @@ exports.getShowsByMovie = async (movieId) => {
 
 exports.getShowById = async (id) => {
   const show = await Show.findById(id);
-  if (!show) throw new Error("Show not found");
+  if (!show) throw new AppError("Show not found",404);
   return show;
 };
 
@@ -71,7 +72,7 @@ exports.recommendSeats = async (showId, preferences) => {
 
 console.log("Show:", show);
 console.log("MovieId:", show?.movieId);
-  if (!show) throw new Error("Show not found");
+  if (!show) throw new AppError("Show not found",404);
 
   //Get available seats
   const allSeats = await Seat.find({
@@ -99,7 +100,7 @@ console.log("MovieId:", show?.movieId);
     }));
 
   if (availableSeats.length === 0)
-    throw new Error("No seats available for this show");
+    throw new AppError("No seats available for this show",400);
 
   //Prompt
   const prompt = ` You are a smart seat recommendation system for a movie theater.
@@ -143,6 +144,6 @@ console.log("MovieId:", show?.movieId);
         const clean = rawResponse.replace(/```json|```/g, "").trim();
         return JSON.parse(clean);
     } catch (err) {
-        throw new Error("AI recommendation failed, please try again");
+        throw new AppError("AI recommendation failed, please try again",500);
     }
 };

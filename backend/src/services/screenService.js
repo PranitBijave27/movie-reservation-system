@@ -2,6 +2,7 @@ const Screen = require("../models/Screen");
 const Theater = require("../models/Theater");
 const Seat = require("../models/Seat");
 const mongoose = require("mongoose");
+const AppError=require("../utils/AppError");
 
 exports.createScreen = async (data) => {
 	const session = await mongoose.startSession();
@@ -11,10 +12,10 @@ exports.createScreen = async (data) => {
 
 		// verifing theater exists
 		const theater = await Theater.findById(theaterId);
-		if (!theater) throw new Error("Theater not found");
+		if (!theater) throw new AppError("Theater not found", 404);          
 
 		const existing = await Screen.findOne({ theaterId, name });
-		if (existing) throw new Error("Screen name already exists in this theater");
+		if (existing) throw new AppError("Screen already exists in this theater", 409);
 
 		// total seats
 		const totalSeats = rows.length * seatsPerRow;
