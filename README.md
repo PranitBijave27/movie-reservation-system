@@ -34,7 +34,10 @@ A production-ready RESTful backend for a movie ticketing system built with Node.
 - **Soft Delete** — Movies archived instead of deleted to preserve booking history
 - **Cancellation Policy** — Bookings cannot be cancelled within 2 hours of showtime
 - **Swagger UI Documentation** — All 20+ APIs documented and testable in browser
-
+---
+## 🤖 AI Powered Feature
+### Smart Seat Recommendation
+- CineBook integrates **Google Gemini AI** to provide intelligent seat recommendations based on user preferences.
 ---
 
 ## 🗂️ Project Structure
