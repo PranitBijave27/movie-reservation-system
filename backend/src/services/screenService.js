@@ -1,24 +1,24 @@
 const Screen = require("../models/Screen");
 const Theater = require("../models/Theater");
 const Seat = require("../models/Seat");
-const mongoose = require("mongoose");
-const AppError=require("../utils/AppError");
+const AppError = require("../utils/AppError");
+const { withTransaction } = require("../utils/transactionHelper");
 
 exports.createScreen = async (data) => {
-	const session = await mongoose.startSession();
-	session.startTransaction();
-	try {
-		const { theaterId, name, rows, seatsPerRow, layoutType } = data;
+	const { theaterId, name, rows, seatsPerRow, layoutType } = data;
 
-		// verifing theater exists
-		const theater = await Theater.findById(theaterId);
-		if (!theater) throw new AppError("Theater not found", 404);          
+	// verify theater exists
+	const theater = await Theater.findById(theaterId);
+	if (!theater) throw new AppError("Theater not found", 404);
 
-		const existing = await Screen.findOne({ theaterId, name });
-		if (existing) throw new AppError("Screen already exists in this theater", 409);
+	const existing = await Screen.findOne({ theaterId, name });
+	if (existing) throw new AppError("Screen already exists in this theater", 409);
 
-		// total seats
-		const totalSeats = rows.length * seatsPerRow;
+	// total seats
+	const totalSeats = rows.length * seatsPerRow;
+
+	return await withTransaction(async (session) => {
+		const queryOptions = session ? { session } : {};
 
 		const screen = new Screen({
 			theaterId,
@@ -26,9 +26,9 @@ exports.createScreen = async (data) => {
 			totalSeats,
 			layoutType,
 		});
-		await screen.save({session});
+		await screen.save(queryOptions);
 
-		//seat generation
+		// seat generation
 		const seats = [];
 		for (let row of rows) {
 			for (let num = 1; num <= seatsPerRow; num++) {
@@ -40,15 +40,16 @@ exports.createScreen = async (data) => {
 				});
 			}
 		}
-		
-		await Seat.insertMany(seats);
-		await session.commitTransaction();
-    	session.endSession();
-		
+
+		try {
+			await Seat.insertMany(seats, queryOptions);
+		} catch (err) {
+			if (!session) {
+				await Screen.deleteOne({ _id: screen._id });
+			}
+			throw err;
+		}
+
 		return screen;
-	} catch (error) {
-		await session.abortTransaction();
-    	session.endSession();
-		throw error;
-	 }
+	});
 };
