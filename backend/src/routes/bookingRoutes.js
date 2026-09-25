@@ -10,6 +10,7 @@ router.get("/show/:showId/seats",bookingController.getBookedSeats);
 router.get("/show/:showId/availability",bookingController.getSeatAvailabilty);
 
 router.get("/me",authMiddleware, bookingController.getMyBookings);
+router.get("/:bookingId", authMiddleware, bookingController.getBookingById);
 
 router.patch("/:bookingId/confirm", authMiddleware, bookingController.confirmBooking);
 router.patch("/:bookingId/cancel", authMiddleware, bookingController.cancelBooking );
