@@ -53,12 +53,20 @@ exports.getShowsByMovie = async (movieId) => {
         movieId,
         status: "scheduled",
     })
-        .populate("screenId")
+        .populate({
+            path: "screenId",
+            populate: { path: "theaterId", select: "name city address" }
+        })
         .sort({ startTime: 1 });
 };
 
 exports.getShowById = async (id) => {
-    const show = await Show.findById(id);
+    const show = await Show.findById(id)
+        .populate("movieId")
+        .populate({
+            path: "screenId",
+            populate: { path: "theaterId", select: "name city address" }
+        });
     if (!show) throw new AppError("Show not found", 404);
     return show;
 };
