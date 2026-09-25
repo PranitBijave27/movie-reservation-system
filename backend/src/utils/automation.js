@@ -31,6 +31,49 @@ const startAutomation = () => {
                 console.log(`[Automation] Released seats for ${expiredIds.length} expired bookings.`);
             }
 
+            // 3. Direct Safety Sweep: Immediately delete any lock whose 5-minute hold has physically elapsed
+            const directSweep = await ShowSeat.deleteMany({
+                status: "locked",
+                expiresAt: { $lt: now }
+            });
+            if (directSweep.deletedCount > 0) {
+                console.log(`[Automation] Time-swept ${directSweep.deletedCount} expired seat locks.`);
+            }
+
+            // 4. Reconciliation Loop: Heals locks orphaned by an incomplete sweep or crash
+            // Defensive: Purge any corrupted locks missing a bookingId
+            await ShowSeat.deleteMany({
+                status: "locked",
+                $or: [{ bookingId: null }, { bookingId: { $exists: false } }]
+            });
+
+            const staleBookingIds = await ShowSeat.find({
+                status: "locked",
+                bookingId: { $ne: null }
+            }).distinct("bookingId");
+
+            if (staleBookingIds.length > 0) {
+                const stillValidPendingIds = await Booking.find({
+                    _id: { $in: staleBookingIds },
+                    status: "pending"
+                }).distinct("_id");
+
+                const validIdSet = new Set(
+                    stillValidPendingIds
+                        .filter(Boolean)
+                        .map((id) => id.toString())
+                );
+
+                const orphanedBookingIds = staleBookingIds.filter(
+                    (id) => id && !validIdSet.has(id.toString())
+                );
+
+                if (orphanedBookingIds.length > 0) {
+                    await ShowSeat.deleteMany({ bookingId: { $in: orphanedBookingIds } });
+                    console.log(`[Automation] Healed ${orphanedBookingIds.length} orphaned booking locks from a prior incomplete sweep.`);
+                }
+            }
+
             // Mark completed shows
             await Show.updateMany({
                 status: "scheduled",
