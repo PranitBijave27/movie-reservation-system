@@ -71,3 +71,15 @@ exports.getMyBookings=wrapAsync(async (req,res)=>{
         data: bookings
   });
 });
+
+exports.getBookingById = wrapAsync(async (req, res) => {
+    const booking = await bookingService.getBookingById(
+        req.params.bookingId,
+        req.user._id
+    );
+    res.status(200).json({
+        success: true,
+        message: "Booking fetched successfully",
+        data: booking
+    });
+});
