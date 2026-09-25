@@ -97,7 +97,7 @@ exports.createBooking = async ({ userId, showId, seatIds }) => {
             // If running without transaction (standalone Mongo), rollback created booking manually
             if (!session && booking) {
                 await Booking.deleteOne({ _id: booking._id });
-                await ShowSeat.deleteMany({ bookingId: booking._id });
+                await ShowSeat.deleteMany({ bookingId: booking._id }); // clean up any partial inserts
             }
 
             if (err.code === 11000) {
@@ -182,6 +182,17 @@ exports.confirmBooking = async (bookingId, userId) => {
         { status: "booked", expiresAt: null }
     );
 
+    await booking.populate([
+        {
+            path: "showId",
+            populate: [
+                { path: "movieId", select: "title duration posterUrl genre language releaseDate" },
+                { path: "screenId", populate: { path: "theaterId", select: "name city address" } }
+            ]
+        },
+        { path: "seats", select: "row number type" }
+    ]);
+
     return booking;
 };
 
@@ -206,16 +217,21 @@ exports.cancelBooking = async (bookingId, userId) => {
 
     const currentTime = new Date();
     const showTime = new Date(show.startTime);
-
     const timeDifference = showTime - currentTime;
 
-    if (timeDifference < 0) throw new AppError("Cannot cancel a show that has already started or finished", 400);
-    if (timeDifference < 2 * 60 * 60 * 1000) throw new AppError("Cannot cancel within 2 hours of showtime", 400);
+    // The 2-hour cancellation rule applies to paid/confirmed bookings
+    // For pending holds, the user is immediately releasing temporary locked seats
+    if (booking.status === "confirmed") {
+        if (timeDifference < 0) throw new AppError("Cannot cancel a show that has already started or finished", 400);
+        if (timeDifference < 2 * 60 * 60 * 1000) throw new AppError("Cannot cancel within 2 hours of showtime", 400);
+    }
 
     booking.status = "cancelled";
 
     if (booking.paymentStatus === "paid") {
         booking.paymentStatus = "refunded";
+    } else {
+        booking.paymentStatus = "failed";
     }
     booking.expiresAt = null;
 
@@ -249,4 +265,33 @@ exports.getUserBookings = async (userId) => {
             select: "row number"
         }).sort({ createdAt: -1 });
     return bookings;
-}
+};
+
+exports.getBookingById = async (bookingId, userId) => {
+    const booking = await Booking.findById(bookingId)
+        .populate({
+            path: "showId",
+            populate: [
+                {
+                    path: "movieId",
+                    select: "title duration posterUrl genre language releaseDate"
+                },
+                {
+                    path: "screenId",
+                    populate: {
+                        path: "theaterId",
+                        select: "name city address"
+                    }
+                }
+            ]
+        }).populate({
+            path: "seats",
+            select: "row number type"
+        });
+
+    if (!booking) throw new AppError("Booking not found", 404);
+    if (booking.userId.toString() !== userId.toString()) {
+        throw new AppError("Unauthorized to access this booking", 403);
+    }
+    return booking;
+};
